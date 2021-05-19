@@ -25,6 +25,7 @@ def slugify(value, allow_unicode=False):
 
 def download_blobs(local_path):
     sas_url = 'INSERT_URL_HERE'
+
     client = ContainerClient.from_container_url(sas_url)
     blob_list = client.list_blobs()
 
@@ -67,6 +68,28 @@ def handle_file(path):
         cset = CollectionSet()
         cset.ParseFromString(record['Body'])
         handle_collection_set(cset)
+
+def copy_blobs():
+    ms_blob_url = ""
+    target_client = ContainerClient.from_container_url(ms_blob_url)
+
+    nms_blob_url = ""
+    source_client = ContainerClient.from_container_url(nms_blob_url)
+
+    local_path = "./data"
+    # Create a local directory to hold blob data
+    Path(local_path).mkdir(parents=True, exist_ok=True)
+
+    # Download all the blobs
+    for blob in source_client.list_blobs():
+        download_file_path = os.path.join(local_path, slugify(blob.name))
+        print("Downloading blob to \n\t" + download_file_path)
+        with open(download_file_path, "wb") as download_file:
+            download_file.write(source_client.download_blob(blob).readall())
+
+        print("Uploading blob...")
+        with open(download_file_path, "rb") as data:
+            target_client.upload_blob(blob, data)
 
 
 if __name__ == '__main__':
